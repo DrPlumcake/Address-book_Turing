@@ -1,19 +1,110 @@
 import tkinter as tk
 from tkinter import ttk
 
+class Persona():
+    
+    def __init__(self, name : str, surname : str, address : str, number : str, age : int):
+        self.name = name
+        self.surname = surname
+        self.address = address
+        self.number = number
+        self.age = age
+        
+    def setName(self, name):
+        self.name = name
+        
+    def setSurname(self, surname):
+        self.surname = surname
+    
+    def setAddress(self, address):
+        self.address = address
+        
+    def setNumber(self, number):
+        self.number = number
+        
+    def setAge(self, age):
+        self.age = age
+        
+data = [
+    Persona("Mario", "Rossi", "Casa 1", "2384123512", 34),
+    Persona("Andrea", "Fantasticini", "Casa 2", "2349374902", 23),
+    Persona("Frank", "Castle", "Casa 3", "32415161613", 37),
+    ]
+
+class ErrorWindow(tk.Toplevel):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+        self.config(width=400, height=200)
+        self.resizable(0,0)
+
+        self.label = ttk.Label(
+            self,
+            text="You need to select a contact to modify it or delete it"
+        )
+        self.label.grid(row=0, column=0, padx=10, pady=20, sticky="nwes")
+        self.ok = ttk.Button(
+            self,
+            text="Ok",
+            command=lambda:self.destroy()
+        )
+        self.ok.grid(row=1, column=0, padx=20, pady=5, sticky="s")
+        
+        self.focus()
+        self.grab_set()
+
+class CheckWindow(tk.Toplevel):
+    
+    def __init__(self, *args, callback=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.callback = callback
+        self.config(width=400, height=200)
+        self.resizable(0,0)
+        
+        self.check_label = ttk.Label(
+            self,
+            text="This contact will be deleted, continue?"
+        )
+        self.yes_Button = ttk.Button(
+            self,
+            text="Yes",
+            command=lambda:self.delete_button()
+        )
+        self.no_Button = ttk.Button(
+            self,
+            text="No",
+            command=lambda:self.destroy()
+        )
+        
+        self.check_label.grid(row=0, column=0, pady=20, padx=10, sticky="nswe")
+        self.yes_Button.grid(row=1, column=0, pady=5, padx=10, sticky="w")
+        self.no_Button.grid(row=1, column=1, pady=5, padx=10, sticky="e")
+        
+        self.focus()
+        self.grab_set()
+        
+    def delete_button(self):
+            self.callback()
+            self.destroy()
 
 class InputWindow(tk.Toplevel):
 
-    def __init__(self, *args, callback=None, **kwargs):
+    def __init__(self, *args, callback=None, item : Persona | None, ind=None, **kwargs):
         super().__init__(*args, **kwargs)
         # callback is a function that this window will call
         # with the entered name as an argument once the button
         # has been pressed.
         self.callback = callback
-        self.config(width=300, height=400)
+        self.config(width=400, height=400)
         # Disable the button for resizing the window.
         self.resizable(0, 0)
         self.title("Insert Contact Info")
+        
+        modify= False
+        if item != None:
+            modify= True
         
         # Insert Name Info
         self.labelName = ttk.Label(
@@ -23,6 +114,8 @@ class InputWindow(tk.Toplevel):
         self.labelName.grid(row=0, column=0, sticky="w", padx=10, pady=2)
         self.entry_name = ttk.Entry(self)
         self.entry_name.grid(row=1, column=0, sticky="w", padx=10, pady=2)
+        if modify:
+            self.entry_name.insert(index=0, string=item.name)
         
         # Insert Surname
         self.labelSurname = ttk.Label(
@@ -32,6 +125,8 @@ class InputWindow(tk.Toplevel):
         self.labelSurname.grid(row=2, column=0, sticky="w", padx=10, pady=2)
         self.entry_surname = ttk.Entry(self)
         self.entry_surname.grid(row=3, column=0, sticky="w", padx=10, pady=2)
+        if modify:
+            self.entry_surname.insert(index=0, string=item.surname)
         
         # Insert Number
         self.labelNumber = ttk.Label(
@@ -41,6 +136,8 @@ class InputWindow(tk.Toplevel):
         self.labelNumber.grid(row=4, column=0, sticky="w", padx=10, pady=2)
         self.entry_number = ttk.Entry(self)
         self.entry_number.grid(row=5, column=0, sticky="w", padx=10, pady=2)
+        if modify:
+            self.entry_number.insert(index=0, string=item.number)
         
         # Insert Address
         self.labelAddress = ttk.Label(
@@ -50,6 +147,8 @@ class InputWindow(tk.Toplevel):
         self.labelAddress.grid(row=6, column=0, sticky="w", padx=10, pady=2)
         self.entry_address = ttk.Entry(self)
         self.entry_address.grid(row=7, column=0, sticky="w", padx=10, pady=2)
+        if modify:
+            self.entry_address.insert(index=0, string=item.address)
         
         # Insert Age
         self.labelAge = ttk.Label(
@@ -58,13 +157,15 @@ class InputWindow(tk.Toplevel):
         )
         self.labelAge.grid(row=8, column=0, sticky="w", padx=10, pady=2)
         self.entry_age = ttk.Entry(self)
-        self.entry_age.grid(row=9, column=0, sticky="w", padx=10, pady=2)
+        self.entry_age.grid(row=9, column=0, sticky="w ", padx=10, pady=2)
+        if modify:
+            self.entry_age.insert(index=0, string=str(item.age))
         
         #Button Done
         self.button_done = ttk.Button(
             self,
             text="Submit",
-            command=self.button_done_pressed
+            command= lambda: self.Save(mod=modify, item=item, ind=ind)
         )
         self.button_done.grid(row=10, column=0, sticky="w", padx=10, pady=20)
         
@@ -72,17 +173,37 @@ class InputWindow(tk.Toplevel):
         self.button_cancel = ttk.Button(
             self,
             text="Cancel",
-            command=self.button_done_pressed
+            command= lambda: self.destroy()
         )
         self.button_cancel.grid(row=10, column=1, sticky="e", padx=10, pady=20)
         
         self.focus()
         self.grab_set()
 
-    def button_done_pressed(self):
+    def Save(self, mod, item, ind):
         # Get the entered name and invoke the callback function
         # passed when creating this window.
-        self.callback(self.entry_name.get())
+        if mod:
+            new_p = item
+            new_p.name=self.entry_name.get(),
+            new_p.surname=self.entry_surname.get(),
+            new_p.address = self.entry_address.get(),
+            new_p.address = new_p.address[0]
+            new_p.number=self.entry_number.get(),
+            new_p.age=self.entry_age.get()
+            self.callback(person=new_p, index=ind)
+        
+        else: 
+            new_p = Persona(
+                name=self.entry_name.get(),
+                surname=self.entry_surname.get(),
+                address=self.entry_address.get(),
+                number=self.entry_number.get(),
+                age=self.entry_age.get()
+                )
+            data.append(new_p)
+            self.callback(person=new_p)
+        
         # Close the window.
         self.destroy()
 
@@ -91,7 +212,7 @@ class MainWindow(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.config(width=400, height=300, background="#1E1E0A")
+        self.config(width=400, height=300, background="white")
         self.minsize(400,300)
         self.geometry("400x300")
         self.title("Rubrica")
@@ -100,32 +221,12 @@ class MainWindow(tk.Tk):
         
         bFrame = ttk.Frame(width=300, height=100)
         bFrame.grid(row=1, column=0, sticky="S", padx=10, pady=10)
-        self.button_new = ttk.Button(
-            bFrame,
-            text="New Contact",
-            command=self.request_name
-        )
-        self.button_modify = ttk.Button(
-            bFrame,
-            text="Modify Contact",
-        )
-        self.button_delete = ttk.Button(
-            bFrame,
-            text="Delete Contact",
-        )
-        self.label_name = ttk.Label(
-            bFrame,
-            text="You have not entered your name yet."
-        )
-        self.button_new.grid(row=1, column=0)
-        self.button_modify.grid(row=1, column=1)
-        self.button_delete.grid(row=1, column=2)
         
         def read_data_to_main(data):
             index=0
-            for index, line in enumerate(data):
+            for index, person in enumerate(data):
                 self.tree.insert('', tk.END, iid = index,
-                    text = line[0], values = line[1:])
+                    text = person.name, values = [person.surname, person.number])
         
         columns = ("surname", "number")
 
@@ -145,48 +246,78 @@ class MainWindow(tk.Tk):
         self.tree.heading('number', text='Phone Number')
 
         read_data_to_main(data=data)
+        self.button_new = ttk.Button(
+            bFrame,
+            text="New Contact",
+            command=lambda: self.new_contact()
+        )
+        self.button_modify = ttk.Button(
+            bFrame,
+            text="Modify Contact",
+            command=lambda: self.modify_contact()
+        )
+        self.button_delete = ttk.Button(
+            bFrame,
+            text="Delete Contact",
+            command=lambda: self.delete_request()
+        )
+        self.button_new.grid(row=1, column=0)
+        self.button_modify.grid(row=1, column=1)
+        self.button_delete.grid(row=1, column=2)
 
-    def request_name(self):
+    def new_contact(self):
         # Create the child window and pass the callback
-        # function by which we want to receive the entered
-        # name.
-        self.ventana_nombre = InputWindow(
-            callback=self.name_entered
+        # function 
+        
+        self.New_window = InputWindow(
+            callback=self.new_contact_save,
+            item=None,
+            ind=None
         )
 
-    def name_entered(self, name):
+    def new_contact_save(self, person : Persona):
         # This function is invoked once the user presses the
-        # "Submit" button within the secondary window. The entered
-        # name will be in the "name" argument.
-        self.label_name.config(
-            text="Your name is: " + name
+        # "Submit" button within the secondary window. 
+        
+        self.tree.insert('', tk.END,
+            text = person.name, values = [person.surname, person.number])
+        
+    def modify_contact(self):
+        # row index
+        item = self.tree.focus()
+        if item == "":
+            self.error = ErrorWindow()
+            return
+        p = data[int(item)]
+        
+        self.New_window = InputWindow(
+            callback=self.update_contact,
+            item=p,
+            ind=item
         )
+        
+    def update_contact(self, person : Persona, index):
+        # Save data
+        self.tree.item(index, text=person.name, values=[person.surname, person.number])
 
+    def delete_request(self):
+        
+        item = self.tree.focus()
+        if item == "":
+            self.error = ErrorWindow()
+            return
+        
+        self.Check_Window = CheckWindow(
+            callback=self.delete_contact,
+        )
+        
+    def delete_contact(self):
+        
+        self.tree.delete(self.tree.focus())
+        
+        
+        
 if __name__ == "__main__":
-    data = [
-        ["Mario","Rossi", 264735917],
-        ["Andrea", "Fantasticini", 3271871202],
-        ["Walter", "White", 184197491],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-        ["Frank", "Castle",  1415161631],
-    ]
+    
     main_window = MainWindow()
     main_window.mainloop()
