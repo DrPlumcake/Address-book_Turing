@@ -207,7 +207,6 @@ class InputWindow(tk.Toplevel):
         # Close the window.
         self.destroy()
 
-
 class MainWindow(tk.Tk):
 
     def __init__(self, *args, **kwargs):
@@ -314,9 +313,7 @@ class MainWindow(tk.Tk):
     def delete_contact(self):
         
         self.tree.delete(self.tree.focus())
-        
-        
-        
+       
 if __name__ == "__main__":
     
     main_window = MainWindow()
