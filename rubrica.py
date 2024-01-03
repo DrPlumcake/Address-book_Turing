@@ -1,4 +1,5 @@
 import tkinter as tk
+import mysql.connector as connector
 from tkinter import ttk
 
 class Persona():
@@ -31,6 +32,61 @@ data = [
     Persona("Frank", "Castle", "Casa 3", "32415161613", 37),
     ]
 
+class LoginWindow(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config(width=400, height=200)
+        self.resizable(0,0)
+        self.title("Login")
+        
+        self.user_label = ttk.Label(
+            self,
+            text="Enter username"
+        )
+        self.pass_label = ttk.Label(
+            self,
+            text="Enter password"
+        )
+        self.user_entry = ttk.Entry(
+            self,
+        )
+        self.pass_entry = ttk.Entry(
+            self,
+        )
+        self.Enter_Button = ttk.Button(
+            self,
+            text="Login",
+            command= lambda: self.login_request()
+        )
+        
+        self.user_label.grid(row=0, column=0, pady=5, padx=15, sticky="w")
+        self.pass_label.grid(row=2, column=0, pady=5, padx=15, sticky="w")
+        self.user_entry.grid(row=1, column=0, pady=5, padx=15, sticky="w")
+        self.pass_entry.grid(row=3, column=0, pady=5, padx=15, sticky="w")
+        self.Enter_Button.grid(row=4, column=0, pady=15, padx=10, sticky="s")
+        
+    def login_request(self):
+        username = self.user_entry.get()
+        password = self.pass_entry.get()
+        try:
+            mydb = connector.connect(
+                user=username,
+                password=password,
+            )
+            
+            if mydb.is_connected():
+                print("Connessione a MySQL riuscita")
+        except connector.Error as err:
+            ErrorLoginWindow(
+                self, 
+                error=err
+            )
+        
+        else:
+            self.destroy()
+            mainWindow= MainWindow(db=mydb)
+            mainWindow.mainloop()
+
 class ErrorWindow(tk.Toplevel):
     
     def __init__(self, *args, **kwargs):
@@ -50,6 +106,34 @@ class ErrorWindow(tk.Toplevel):
             command=lambda:self.destroy()
         )
         self.ok.grid(row=1, column=0, padx=20, pady=5, sticky="s")
+        
+        self.focus()
+        self.grab_set()
+
+class ErrorLoginWindow(tk.Toplevel):
+    
+    def __init__(self, *args, error=None,**kwargs):
+        super().__init__(*args, **kwargs)
+    
+        self.config(width=400, height=200)
+        self.resizable(0,0)
+
+        self.label = ttk.Label(
+            self,
+            text="Invalid credentials. Please check and try again."
+        )
+        self.label.grid(row=0, column=0, padx=10, pady=20, sticky="nwes")
+        self.label_err = ttk.Label(
+            self,
+            text=error
+        )
+        self.label_err.grid(row=1, column=0, padx=10, pady=5, sticky="nwes")
+        self.ok = ttk.Button(
+            self,
+            text="Ok",
+            command=lambda:self.destroy()
+        )
+        self.ok.grid(row=2, column=0, padx=20, pady=5, sticky="s")
         
         self.focus()
         self.grab_set()
@@ -209,7 +293,7 @@ class InputWindow(tk.Toplevel):
 
 class MainWindow(tk.Tk):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, db=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.config(width=400, height=300, background="white")
         self.minsize(400,300)
@@ -316,5 +400,5 @@ class MainWindow(tk.Tk):
        
 if __name__ == "__main__":
     
-    main_window = MainWindow()
-    main_window.mainloop()
+    login_window = LoginWindow()
+    login_window.mainloop()
