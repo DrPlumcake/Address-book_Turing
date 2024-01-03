@@ -1,4 +1,5 @@
 import tkinter as tk
+import mysql.connector as connector
 from tkinter import ttk
 
 class Persona():
@@ -24,12 +25,63 @@ class Persona():
         
     def setAge(self, age):
         self.age = age
+
+class LoginWindow(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config(width=400, height=200)
+        self.resizable(0,0)
+        self.title("Login")
         
-data = [
-    Persona("Mario", "Rossi", "Casa 1", "2384123512", 34),
-    Persona("Andrea", "Fantasticini", "Casa 2", "2349374902", 23),
-    Persona("Frank", "Castle", "Casa 3", "32415161613", 37),
-    ]
+        self.user_label = ttk.Label(
+            self,
+            text="Enter username"
+        )
+        self.pass_label = ttk.Label(
+            self,
+            text="Enter password"
+        )
+        self.user_entry = ttk.Entry(
+            self,
+        )
+        self.pass_entry = ttk.Entry(
+            self,
+            show="*"
+        )
+        self.Enter_Button = ttk.Button(
+            self,
+            text="Login",
+            command= lambda: self.login_request()
+        )
+        
+        self.user_label.grid(row=0, column=0, pady=5, padx=15, sticky="w")
+        self.pass_label.grid(row=2, column=0, pady=5, padx=15, sticky="w")
+        self.user_entry.grid(row=1, column=0, pady=5, padx=15, sticky="w")
+        self.pass_entry.grid(row=3, column=0, pady=5, padx=15, sticky="w")
+        self.Enter_Button.grid(row=4, column=0, pady=15, padx=10, sticky="s")
+        
+    def login_request(self):
+        username = self.user_entry.get()
+        password = self.pass_entry.get()
+        try:
+            mydb = connector.connect(
+                user=username,
+                password=password,
+                database="rubrica_schema"
+            )
+            
+            if mydb.is_connected():
+                print("Connessione a MySQL riuscita")
+        except connector.Error as err:
+            ErrorLoginWindow(
+                self, 
+                error=err
+            )
+        
+        else:
+            self.destroy()
+            mainWindow= MainWindow(db=mydb)
+            mainWindow.mainloop()
 
 class ErrorWindow(tk.Toplevel):
     
@@ -50,6 +102,34 @@ class ErrorWindow(tk.Toplevel):
             command=lambda:self.destroy()
         )
         self.ok.grid(row=1, column=0, padx=20, pady=5, sticky="s")
+        
+        self.focus()
+        self.grab_set()
+
+class ErrorLoginWindow(tk.Toplevel):
+    
+    def __init__(self, *args, error=None,**kwargs):
+        super().__init__(*args, **kwargs)
+    
+        self.config(width=400, height=200)
+        self.resizable(0,0)
+
+        self.label = ttk.Label(
+            self,
+            text="Invalid credentials. Please check and try again."
+        )
+        self.label.grid(row=0, column=0, padx=10, pady=20, sticky="nwes")
+        self.label_err = ttk.Label(
+            self,
+            text=error
+        )
+        self.label_err.grid(row=1, column=0, padx=10, pady=5, sticky="nwes")
+        self.ok = ttk.Button(
+            self,
+            text="Ok",
+            command=lambda:self.destroy()
+        )
+        self.ok.grid(row=2, column=0, padx=20, pady=5, sticky="s")
         
         self.focus()
         self.grab_set()
@@ -91,7 +171,7 @@ class CheckWindow(tk.Toplevel):
 
 class InputWindow(tk.Toplevel):
 
-    def __init__(self, *args, callback=None, item : Persona | None, ind=None, **kwargs):
+    def __init__(self, *args, callback=None, item : Persona | None, key=None, **kwargs):
         super().__init__(*args, **kwargs)
         # callback is a function that this window will call
         # with the entered name as an argument once the button
@@ -165,7 +245,7 @@ class InputWindow(tk.Toplevel):
         self.button_done = ttk.Button(
             self,
             text="Submit",
-            command= lambda: self.Save(mod=modify, item=item, ind=ind)
+            command= lambda: self.Save(mod=modify, item=item, key=key)
         )
         self.button_done.grid(row=10, column=0, sticky="w", padx=10, pady=20)
         
@@ -180,7 +260,7 @@ class InputWindow(tk.Toplevel):
         self.focus()
         self.grab_set()
 
-    def Save(self, mod, item, ind):
+    def Save(self, mod, item, key):
         # Get the entered name and invoke the callback function
         # passed when creating this window.
         if mod:
@@ -188,10 +268,9 @@ class InputWindow(tk.Toplevel):
             new_p.name=self.entry_name.get(),
             new_p.surname=self.entry_surname.get(),
             new_p.address = self.entry_address.get(),
-            new_p.address = new_p.address[0]
             new_p.number=self.entry_number.get(),
             new_p.age=self.entry_age.get()
-            self.callback(person=new_p, index=ind)
+            self.callback(person=new_p, key=key)
         
         else: 
             new_p = Persona(
@@ -201,7 +280,7 @@ class InputWindow(tk.Toplevel):
                 number=self.entry_number.get(),
                 age=self.entry_age.get()
                 )
-            data.append(new_p)
+            #db append
             self.callback(person=new_p)
         
         # Close the window.
@@ -209,7 +288,7 @@ class InputWindow(tk.Toplevel):
 
 class MainWindow(tk.Tk):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, db : connector.MySQLConnection, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config(width=400, height=300, background="white")
         self.minsize(400,300)
@@ -221,11 +300,8 @@ class MainWindow(tk.Tk):
         bFrame = ttk.Frame(width=300, height=100)
         bFrame.grid(row=1, column=0, sticky="S", padx=10, pady=10)
         
-        def read_data_to_main(data):
-            index=0
-            for index, person in enumerate(data):
-                self.tree.insert('', tk.END, iid = index,
-                    text = person.name, values = [person.surname, person.number])
+        self.datab = db
+        self.cursor = self.datab.cursor()
         
         columns = ("surname", "number")
 
@@ -236,15 +312,16 @@ class MainWindow(tk.Tk):
         self.bar.grid(row=0, column=4, sticky="ns", padx=10, pady=10)
         self.tree.configure(yscrollcommand=self.bar.set)
         
-        self.tree.column('#0', width=120, anchor='w')
-        self.tree.column('surname', width=120, anchor='w')
-        self.tree.column('number', width=120, anchor='w')
+        self.tree.column('#0', width=100, anchor='w')
+        self.tree.column('surname', width=100, anchor='w')
+        self.tree.column('number', width=100, anchor='w')
 
         self.tree.heading('#0', text='Name')
         self.tree.heading('surname', text='Surname')
         self.tree.heading('number', text='Phone Number')
-
-        read_data_to_main(data=data)
+        
+        self.refresh()
+        
         self.button_new = ttk.Button(
             bFrame,
             text="New Contact",
@@ -264,22 +341,43 @@ class MainWindow(tk.Tk):
         self.button_modify.grid(row=1, column=1)
         self.button_delete.grid(row=1, column=2)
 
+    def refresh(self):
+        if self.datab.is_connected():
+            query = "SELECT * FROM Contatti"
+            self.cursor.execute(query)
+            
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+
+            for row in self.cursor.fetchall():
+                self.tree.insert('', tk.END, text=row[0], values=[row[1], row[2]])
+    
     def new_contact(self):
         # Create the child window and pass the callback
         # function 
-        
         self.New_window = InputWindow(
             callback=self.new_contact_save,
             item=None,
-            ind=None
         )
 
     def new_contact_save(self, person : Persona):
         # This function is invoked once the user presses the
         # "Submit" button within the secondary window. 
+        query = "INSERT INTO Contatti VALUES (%s, %s, %s, %s, %s)"
+        params = (
+            person.name,
+            person.surname,
+            person.number,
+            person.address,
+            str(person.age)
+        )
         
-        self.tree.insert('', tk.END,
-            text = person.name, values = [person.surname, person.number])
+        self.cursor.execute(query, params)
+        
+        # Apply changes to table
+        self.datab.commit()
+        
+        self.refresh()
         
     def modify_contact(self):
         # row index
@@ -287,17 +385,48 @@ class MainWindow(tk.Tk):
         if item == "":
             self.error = ErrorWindow()
             return
-        p = data[int(item)]
+        
+        values = self.tree.item(item, 'values')
+        key = values[1]
+        
+        # Numero is a Primary key
+        query = f"SELECT * FROM Contatti WHERE Numero = {key}"
+        self.cursor.execute(query)
+        row = self.cursor.fetchone()
+        
+        p = Persona(
+            name=row[0],
+            surname=row[1],
+            number=row[2],
+            address=row[3],
+            age=row[4]
+        )
         
         self.New_window = InputWindow(
             callback=self.update_contact,
             item=p,
-            ind=item
+            key=key
         )
         
-    def update_contact(self, person : Persona, index):
+    def update_contact(self, person : Persona, key):
         # Save data
-        self.tree.item(index, text=person.name, values=[person.surname, person.number])
+        query = ("UPDATE Contatti "
+            "SET Nome = %(name)s, Cognome = %(surname)s, Numero = %(number)s, "
+            "Indirizzo = %(address)s, Eta = %(age)s "
+            "WHERE Numero = %(key)s")
+        params = {
+            "name": person.name[0],
+            "surname": person.surname[0],
+            "number": person.number[0],
+            "address": person.address[0],
+            "age": str(person.age),
+            "key": key
+        }
+        self.cursor.execute(query, params)
+        
+        # Apply changes to table
+        self.datab.commit()
+        
 
     def delete_request(self):
         
@@ -311,10 +440,18 @@ class MainWindow(tk.Tk):
         )
         
     def delete_contact(self):
+        item = self.tree.focus()
+        values = self.tree.item(item, 'values')
+        key = values[1]
+        query = f"DELETE FROM Contatti WHERE Numero = {key}"
+        self.cursor.execute(query)
         
-        self.tree.delete(self.tree.focus())
+        # Apply changes to table
+        self.datab.commit()
+        
+        self.refresh()
        
 if __name__ == "__main__":
     
-    main_window = MainWindow()
-    main_window.mainloop()
+    login_window = LoginWindow()
+    login_window.mainloop()
