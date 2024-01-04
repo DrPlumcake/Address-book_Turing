@@ -1,6 +1,7 @@
 import tkinter as tk
 import mysql.connector as connector
 from tkinter import ttk
+import pathlib
 
 class Persona():
     
@@ -26,6 +27,7 @@ class Persona():
     def setAge(self, age):
         self.age = age
 
+# Used when there is not a properties file
 class LoginWindow(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,13 +43,16 @@ class LoginWindow(tk.Tk):
             self,
             text="Enter password"
         )
+        # Inser Username
         self.user_entry = ttk.Entry(
             self,
         )
+        # Insert Password (Secure)
         self.pass_entry = ttk.Entry(
             self,
             show="*"
         )
+        # Enter Credentials Button
         self.Enter_Button = ttk.Button(
             self,
             text="Login",
@@ -60,6 +65,7 @@ class LoginWindow(tk.Tk):
         self.pass_entry.grid(row=3, column=0, pady=5, padx=15, sticky="w")
         self.Enter_Button.grid(row=4, column=0, pady=15, padx=10, sticky="s")
         
+    # Login Request and connection to DB
     def login_request(self):
         username = self.user_entry.get()
         password = self.pass_entry.get()
@@ -69,20 +75,18 @@ class LoginWindow(tk.Tk):
                 password=password,
                 database="rubrica_schema"
             )
-            
-            if mydb.is_connected():
-                print("Connessione a MySQL riuscita")
         except connector.Error as err:
             ErrorLoginWindow(
                 self, 
                 error=err
             )
-        
+        # Connection succeded
         else:
             self.destroy()
             mainWindow= MainWindow(db=mydb)
             mainWindow.mainloop()
 
+# Pop Up Error Window for Modify and Delete Operations
 class ErrorWindow(tk.Toplevel):
     
     def __init__(self, *args, **kwargs):
@@ -103,9 +107,11 @@ class ErrorWindow(tk.Toplevel):
         )
         self.ok.grid(row=1, column=0, padx=20, pady=5, sticky="s")
         
+        # No interaction with the main Window
         self.focus()
         self.grab_set()
 
+# Pop Up Error Window for Login Operation
 class ErrorLoginWindow(tk.Toplevel):
     
     def __init__(self, *args, error=None,**kwargs):
@@ -131,9 +137,11 @@ class ErrorLoginWindow(tk.Toplevel):
         )
         self.ok.grid(row=2, column=0, padx=20, pady=5, sticky="s")
         
+        # No interaction with the main Window
         self.focus()
         self.grab_set()
 
+# Check Window for Delete Operations
 class CheckWindow(tk.Toplevel):
     
     def __init__(self, *args, callback=None, **kwargs):
@@ -147,6 +155,7 @@ class CheckWindow(tk.Toplevel):
             self,
             text="This contact will be deleted, continue?"
         )
+        # Delete Operation Confirmed
         self.yes_Button = ttk.Button(
             self,
             text="Yes",
@@ -162,19 +171,22 @@ class CheckWindow(tk.Toplevel):
         self.yes_Button.grid(row=1, column=0, pady=5, padx=10, sticky="w")
         self.no_Button.grid(row=1, column=1, pady=5, padx=10, sticky="e")
         
+        # No interaction with the main Window
         self.focus()
         self.grab_set()
         
+    # Cancel Delete Operation
     def delete_button(self):
             self.callback()
             self.destroy()
 
+# Editor Window for Modify and Create Operations
 class InputWindow(tk.Toplevel):
 
     def __init__(self, *args, callback=None, item : Persona | None, key=None, **kwargs):
         super().__init__(*args, **kwargs)
         # callback is a function that this window will call
-        # with the entered name as an argument once the button
+        # with the entered data as an argument once the button
         # has been pressed.
         self.callback = callback
         self.config(width=400, height=400)
@@ -257,11 +269,12 @@ class InputWindow(tk.Toplevel):
         )
         self.button_cancel.grid(row=10, column=1, sticky="e", padx=10, pady=20)
         
+        # No interaction with the main Window
         self.focus()
         self.grab_set()
 
     def Save(self, mod, item, key):
-        # Get the entered name and invoke the callback function
+        # Get the entered data and invoke the callback function
         # passed when creating this window.
         if mod:
             new_p = item
@@ -270,6 +283,7 @@ class InputWindow(tk.Toplevel):
             new_p.address = self.entry_address.get(),
             new_p.number=self.entry_number.get(),
             new_p.age=self.entry_age.get()
+            # Modify Entry to DB
             self.callback(person=new_p, key=key)
         
         else: 
@@ -280,16 +294,18 @@ class InputWindow(tk.Toplevel):
                 number=self.entry_number.get(),
                 age=self.entry_age.get()
                 )
-            #db append
+            # Add Entry to DB
             self.callback(person=new_p)
         
         # Close the window.
         self.destroy()
 
+# Main Window of 'Rubrica'
 class MainWindow(tk.Tk):
 
     def __init__(self, db : connector.MySQLConnection, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Config of the window
         self.config(width=400, height=300, background="white")
         self.minsize(400,300)
         self.geometry("400x300")
@@ -297,21 +313,25 @@ class MainWindow(tk.Tk):
         self.grid_rowconfigure(index=0, weight=1)
         self.grid_columnconfigure(index=0, weight=1)
         
+        # Frame for the Buttons
         bFrame = ttk.Frame(width=300, height=100)
         bFrame.grid(row=1, column=0, sticky="S", padx=10, pady=10)
         
+        # DB cursor
         self.datab = db
         self.cursor = self.datab.cursor()
         
+        # Treeview
         columns = ("surname", "number")
-
         self.tree = ttk.Treeview(columns=columns, height=200)
         self.tree.grid(row=0, column=0, padx = 10, pady = 20)
         
+        # Scrollbar
         self.bar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         self.bar.grid(row=0, column=4, sticky="ns", padx=10, pady=10)
         self.tree.configure(yscrollcommand=self.bar.set)
         
+        # Treeview config
         self.tree.column('#0', width=100, anchor='w')
         self.tree.column('surname', width=100, anchor='w')
         self.tree.column('number', width=100, anchor='w')
@@ -322,16 +342,19 @@ class MainWindow(tk.Tk):
         
         self.refresh()
         
+        # New Contact Button
         self.button_new = ttk.Button(
             bFrame,
             text="New Contact",
             command=lambda: self.new_contact()
         )
+        # Modify Contact Button
         self.button_modify = ttk.Button(
             bFrame,
             text="Modify Contact",
             command=lambda: self.modify_contact()
         )
+        # Delete Contact Button
         self.button_delete = ttk.Button(
             bFrame,
             text="Delete Contact",
@@ -341,6 +364,7 @@ class MainWindow(tk.Tk):
         self.button_modify.grid(row=1, column=1)
         self.button_delete.grid(row=1, column=2)
 
+    # Refresh Treeview function
     def refresh(self):
         if self.datab.is_connected():
             query = "SELECT * FROM Contatti"
@@ -389,7 +413,7 @@ class MainWindow(tk.Tk):
         values = self.tree.item(item, 'values')
         key = values[1]
         
-        # Numero is a Primary key
+        # 'Numero' is a Primary key
         query = f"SELECT * FROM Contatti WHERE Numero = {key}"
         self.cursor.execute(query)
         row = self.cursor.fetchone()
@@ -402,6 +426,7 @@ class MainWindow(tk.Tk):
             age=row[4]
         )
         
+        # Editor
         self.New_window = InputWindow(
             callback=self.update_contact,
             item=p,
@@ -409,7 +434,7 @@ class MainWindow(tk.Tk):
         )
         
     def update_contact(self, person : Persona, key):
-        # Save data
+        # Save data to DB
         query = ("UPDATE Contatti "
             "SET Nome = %(name)s, Cognome = %(surname)s, Numero = %(number)s, "
             "Indirizzo = %(address)s, Eta = %(age)s "
@@ -431,7 +456,7 @@ class MainWindow(tk.Tk):
         
 
     def delete_request(self):
-        
+        # Start Delete Operation
         item = self.tree.focus()
         if item == "":
             self.error = ErrorWindow()
@@ -442,6 +467,7 @@ class MainWindow(tk.Tk):
         )
         
     def delete_contact(self):
+        # Completing Delete Operation
         item = self.tree.focus()
         values = self.tree.item(item, 'values')
         key = values[1]
@@ -455,5 +481,29 @@ class MainWindow(tk.Tk):
        
 if __name__ == "__main__":
     
-    login_window = LoginWindow()
-    login_window.mainloop()
+    # Searching for credientals
+    DIR = pathlib.Path(__file__).parent
+    CREDFILE= DIR / "credentials_database.properties"
+    if CREDFILE.exists():
+        with open(CREDFILE) as file:
+            credentials = file.readlines()
+            print(credentials)
+        try:
+            mydb = connector.connect(
+                user=credentials[0][5:].strip(),
+                password=credentials[1][9:].strip(),
+                database=credentials[2][7:].strip(),
+                port=credentials[3][5:]
+            )
+        except connector.Error as err:
+            print(err)
+            login_window = LoginWindow()
+            login_window.mainloop()
+        else:
+            mainWindow= MainWindow(db=mydb)
+            mainWindow.mainloop()
+    
+    # No credentials file -> Login Window
+    else:
+        login_window = LoginWindow()
+        login_window.mainloop()
