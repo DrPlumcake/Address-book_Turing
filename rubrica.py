@@ -492,8 +492,9 @@ if __name__ == "__main__":
             mydb = connector.connect(
                 user=credentials[0][5:].strip(),
                 password=credentials[1][9:].strip(),
-                database=credentials[2][7:].strip(),
-                port=credentials[3][5:]
+                host=credentials[2][5:].strip(),
+                database=credentials[3][7:].strip(),
+                port=credentials[4][5:]
             )
         except connector.Error as err:
             print(err)
