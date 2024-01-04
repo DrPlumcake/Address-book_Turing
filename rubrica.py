@@ -427,6 +427,8 @@ class MainWindow(tk.Tk):
         # Apply changes to table
         self.datab.commit()
         
+        self.refresh()
+        
 
     def delete_request(self):
         
